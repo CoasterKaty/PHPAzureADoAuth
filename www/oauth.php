@@ -20,7 +20,7 @@ $sessionData = $modDB->QuerySingle('SELECT * FROM tblAuthSessions WHERE txtSessi
 
 
 if ($sessionData) {
-    $oauthRequest = 'grant_type=authorization_code&client_id=' . _OAUTH_CLIENTID . '&redirect_uri=' . urlencode(_URL . '/oauth.php') . '&code=' . $_GET['code'] . '&client_secret=' . urlencode(_OAUTH_SECRET) . '&code_verifier$
+    $oauthRequest = 'grant_type=authorization_code&client_id=' . _OAUTH_CLIENTID . '&redirect_uri=' . urlencode(_URL . '/oauth.php') . '&code=' . $_GET['code'] . '&client_secret=' . urlencode(_OAUTH_SECRET) . '&code_verifier=' . $sessionData['txtCodeVerifier'];
     $ch = curl_init(_OAUTH_SERVER . 'token');
     curl_setopt($ch, CURLOPT_POST, 1);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $oauthRequest);
@@ -35,7 +35,7 @@ if ($sessionData) {
     }
     $jwt = explode('.', $reply->access_token);
     $info = json_decode(base64_decode($jwt[1]), true);
-    $modDB->Update('tblAuthSessions', array('txtRefreshToken' => $reply->refresh_token, 'txtJWT' => base64_decode($jwt[1]), 'txtRedir' => '', 'dtExpires' => date('Y-m-d H:i:s', strtotime('+' . $reply->expires_in . ' seconds'$
+    $modDB->Update('tblAuthSessions', array('txtRefreshToken' => $reply->refresh_token, 'txtJWT' => base64_decode($jwt[1]), 'txtRedir' => '', 'dtExpires' => date('Y-m-d H:i:s', strtotime('+' . $reply->expires_in . ' seconds'))), array('intAuthID' => $sessionData['intAuthID']));
     header('Location: ' . $sessionData['txtRedir']);
 } else {
     header('Location: /');
