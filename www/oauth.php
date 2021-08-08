@@ -16,10 +16,12 @@ if ($_GET['error']) {
     die($_GET['error_description']);
     exit;
 }
+//retrieve session data from database
 $sessionData = $modDB->QuerySingle('SELECT * FROM tblAuthSessions WHERE txtSessionKey=\'' . $modDB->Escape($_SESSION['sessionkey']) . '\'');
 
 
 if ($sessionData) {
+    // Request token from Azure AD
     $oauthRequest = 'grant_type=authorization_code&client_id=' . _OAUTH_CLIENTID . '&redirect_uri=' . urlencode(_URL . '/oauth.php') . '&code=' . $_GET['code'] . '&client_secret=' . urlencode(_OAUTH_SECRET) . '&code_verifier=' . $sessionData['txtCodeVerifier'];
     $ch = curl_init(_OAUTH_SERVER . 'token');
     curl_setopt($ch, CURLOPT_POST, 1);
@@ -28,7 +30,7 @@ if ($sessionData) {
 
     $response = curl_exec($ch);
     curl_close($ch);
-
+    // Decode response from Azure AD. Extract JWT data from supplied access_token and update database.
     $reply = json_decode($response);
     if ($reply->error) {
         die($reply->error_description);
@@ -36,6 +38,7 @@ if ($sessionData) {
     $jwt = explode('.', $reply->access_token);
     $info = json_decode(base64_decode($jwt[1]), true);
     $modDB->Update('tblAuthSessions', array('txtRefreshToken' => $reply->refresh_token, 'txtJWT' => base64_decode($jwt[1]), 'txtRedir' => '', 'dtExpires' => date('Y-m-d H:i:s', strtotime('+' . $reply->expires_in . ' seconds'))), array('intAuthID' => $sessionData['intAuthID']));
+    // Redirect user back to where they came from.
     header('Location: ' . $sessionData['txtRedir']);
 } else {
     header('Location: /');
