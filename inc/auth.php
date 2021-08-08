@@ -23,9 +23,9 @@ class modAuth {
         $this->modDB = new modDB();
 
         session_start();
-        // check session key against database. If it's expired or doesnt exist then forward to Azure AD
         $url = _URL . $_SERVER['REQUEST_URI'];
-
+        
+        // check session key against database. If it's expired or doesnt exist then forward to Azure AD
         if (isset($_SESSION['sessionkey'])) {
             // see if it's still valid
             $res = $this->modDB->QuerySingle('SELECT * FROM tblAuthSessions WHERE txtSessionKey = \'' . $this->modDB->Escape($_SESSION['sessionkey']) . '\' AND dtExpires > NOW()');
@@ -39,6 +39,7 @@ class modAuth {
                 exit;
             }
             if ($_GET['action'] == 'logout') {
+                // Logout action selected, clear from database and browser cookie, redirect to logout URL
                 $this->modDB->Delete('tblAuthSessions', array('intAuthID' => $res['intAuthID']));
                 unset($_SESSION['sessionkey']);
                 session_destroy();
@@ -58,7 +59,7 @@ class modAuth {
                     $reply = json_decode($response);
                     if ($reply->error) {
                         if(substr($reply->error_description, 0, 9) == 'MSIS9615:') {
-                            //refresh token expired
+                            //refresh token expired, this is probably an ADFS error code rather than Azure AD.
                             $this->modDB->Update('tblAuthSessions', array('txtRedir' => $url, 'txtRefreshToken' => ''),  array('intAuthID' => $res['intAuthID']));
                             $oAuthURL = _OAUTH_SERVER . 'authorize?response_type=code&client_id=' . _OAUTH_CLIENTID . '&redirect_uri=' . urlencode(_URL . '/oauth.php') . '&scope=openid%20offline_access';
                             header('Location: ' . $oAuthURL);
@@ -71,13 +72,17 @@ class modAuth {
                     $this->modDB->Update('tblAuthSessions', array('txtRefreshToken' => $reply->refresh_token, 'txtJWT' => base64_decode($jwt[1]), 'txtRedir' => '', 'dtExpires' => date('Y-m-d H:i:s', strtotime('+' . $reply->expires_in . ' seconds'))), array('intAuthID' => $res['intAuthID']));
                 }
             }
+            //Populate userData and userName from the JWT stored in the database.
             $this->userData = json_decode($res['txtJWT']);
             $this->userName = $this->userData->unique_name;
         } else {
+            // Generate the code verifier and challenge
             $this->oAuthChallenge();
+            // Generate a session key and store in cookie, then populate database
             $sessionKey = $this->uuid();
             $_SESSION['sessionkey'] = $sessionKey;
             $this->modDB->Insert('tblAuthSessions', array('txtSessionKey' => $sessionKey, 'txtRedir' => $url, 'txtCodeVerifier' => $this->oAuthVerifier, 'dtExpires' => date('Y-m-d H:i:s', strtotime('+5 minutes'))));
+            // Redirect to Azure AD login page
             $oAuthURL = _OAUTH_SERVER . 'authorize?response_type=code&client_id=' . _OAUTH_CLIENTID . '&redirect_uri=' . urlencode(_URL . '/oauth.php') . '&scope=openid%20offline_access&code_challenge=' . $this->oAuthChallenge . '&code_challenge_method=' . $this->oAuthChallengeMethod;
             header('Location: ' . $oAuthURL);
             exit;
@@ -107,6 +112,7 @@ class modAuth {
     }
 
     function oAuthChallenge() {
+        // Function to generate code verifier and code challenge for oAuth login. See RFC7636 for details. 
         $verifier = $this->oAuthVerifier;
         if (!$this->oAuthVerifier) {
             $chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-._~';
