@@ -17,10 +17,8 @@ $Auth = new modAuth();
 //Display the username, logout link and a list of attributes returned by Azure AD.
 echo '<h1>Hello there, ' . $Auth->userName . '</h1>';
 echo '<h2><a href="/?action=logout">Log out</a></h2>';
-echo '<ul>';
-foreach ($Auth->userData as $item => $value) {
-        echo '<li>' . $item . ' = ' . $value . '</li>';
-}
-echo '</ul>';
+echo '<pre>';
+print_r($Auth->userData);
+echo '</pre>';
 ?>
 
