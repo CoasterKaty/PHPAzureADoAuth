@@ -110,7 +110,7 @@ class modAuth {
         $verifier = $this->oAuthVerifier;
         if (!$this->oAuthVerifier) {
             $chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-._~';
-            $charLen = strlen($chars);
+            $charLen = strlen($chars) - 1;
             $verifier = '';
             for ($i = 0; $i < 128; $i++) {
                 $verifier .= $chars[mt_rand(0, $charLen)];
