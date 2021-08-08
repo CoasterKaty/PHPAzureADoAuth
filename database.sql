@@ -1,0 +1,10 @@
+CREATE TABLE `tblAuthSessions` (
+  `intAuthID` int(11) NOT NULL AUTO_INCREMENT,
+  `txtSessionKey` varchar(255) DEFAULT NULL,
+  `txtJWT` mediumtext DEFAULT NULL,
+  `dtExpires` datetime DEFAULT NULL,
+  `txtRedir` varchar(255) DEFAULT NULL,
+  `txtRefreshToken` text DEFAULT NULL,
+  `txtCodeVerifier` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`intAuthID`)
+) ENGINE=InnoDB AUTO_INCREMENT=73 DEFAULT CHARSET=utf8mb4;
