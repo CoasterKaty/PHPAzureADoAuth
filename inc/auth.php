@@ -1,7 +1,7 @@
 <?php
 /* auth.php Azure AD oAuth Class
  *
- * Katy Nicholson, last updated 08/08/2021
+ * Katy Nicholson, last updated 01/09/2021
  *
  * https://github.com/CoasterKaty
  * https://katytech.blog/
@@ -13,6 +13,7 @@ require_once dirname(__FILE__) . '/mysql.php';
 
 class modAuth {
     var $modDB;
+    var $Token;
     var $userData;
     var $userName;
     var $oAuthVerifier;
@@ -49,7 +50,7 @@ class modAuth {
             if (strtotime($res['dtExpires']) < strtotime('+10 minutes')) {
                 //attempt token refresh
                 if ($res['txtRefreshToken']) {
-                    $oauthRequest = 'grant_type=refresh_token&refresh_token=' . $res['txtRefreshToken'] . '&client_id=' . _OAUTH_CLIENTID . '&client_secret=' . urlencode(_OAUTH_SECRET) . '&scope=openid%20offline_access';
+                    $oauthRequest = 'grant_type=refresh_token&refresh_token=' . $res['txtRefreshToken'] . '&client_id=' . _OAUTH_CLIENTID . '&client_secret=' . urlencode(_OAUTH_SECRET) . '&scope=' . _OAUTH_SCOPE;
                     $ch = curl_init(_OAUTH_SERVER . 'token');
                     curl_setopt($ch, CURLOPT_POST, 1);
                     curl_setopt($ch, CURLOPT_POSTFIELDS, $oauthRequest);
@@ -61,7 +62,7 @@ class modAuth {
                         if(substr($reply->error_description, 0, 9) == 'MSIS9615:') {
                             //refresh token expired, this is probably an ADFS error code rather than Azure AD.
                             $this->modDB->Update('tblAuthSessions', array('txtRedir' => $url, 'txtRefreshToken' => ''),  array('intAuthID' => $res['intAuthID']));
-                            $oAuthURL = _OAUTH_SERVER . 'authorize?response_type=code&client_id=' . _OAUTH_CLIENTID . '&redirect_uri=' . urlencode(_URL . '/oauth.php') . '&scope=openid%20offline_access';
+                            $oAuthURL = _OAUTH_SERVER . 'authorize?response_type=code&client_id=' . _OAUTH_CLIENTID . '&redirect_uri=' . urlencode(_URL . '/oauth.php') . '&scope=' . _OAUTH_SCOPE;
                             header('Location: ' . $oAuthURL);
                             exit;
                         }
@@ -69,10 +70,11 @@ class modAuth {
                     }
                     $jwt = explode('.', $reply->access_token);
                     $info = json_decode(base64_decode($jwt[1]), true);
-                    $this->modDB->Update('tblAuthSessions', array('txtRefreshToken' => $reply->refresh_token, 'txtJWT' => base64_decode($jwt[1]), 'txtRedir' => '', 'dtExpires' => date('Y-m-d H:i:s', strtotime('+' . $reply->expires_in . ' seconds'))), array('intAuthID' => $res['intAuthID']));
+                    $this->modDB->Update('tblAuthSessions', array('txtToken' => $reply->access_token, 'txtRefreshToken' => $reply->refresh_token, 'txtJWT' => base64_decode($jwt[1]), 'txtRedir' => '', 'dtExpires' => date('Y-m-d H:i:s', strtotime('+' . $reply->expires_in . ' seconds'))), array('intAuthID' => $res['intAuthID']));
                 }
             }
             //Populate userData and userName from the JWT stored in the database.
+            $this->Token = $res['txtToken'];
             $this->userData = json_decode($res['txtJWT']);
             $this->userName = $this->userData->unique_name;
         } else {
@@ -83,7 +85,7 @@ class modAuth {
             $_SESSION['sessionkey'] = $sessionKey;
             $this->modDB->Insert('tblAuthSessions', array('txtSessionKey' => $sessionKey, 'txtRedir' => $url, 'txtCodeVerifier' => $this->oAuthVerifier, 'dtExpires' => date('Y-m-d H:i:s', strtotime('+5 minutes'))));
             // Redirect to Azure AD login page
-            $oAuthURL = _OAUTH_SERVER . 'authorize?response_type=code&client_id=' . _OAUTH_CLIENTID . '&redirect_uri=' . urlencode(_URL . '/oauth.php') . '&scope=openid%20offline_access&code_challenge=' . $this->oAuthChallenge . '&code_challenge_method=' . $this->oAuthChallengeMethod;
+            $oAuthURL = _OAUTH_SERVER . 'authorize?response_type=code&client_id=' . _OAUTH_CLIENTID . '&redirect_uri=' . urlencode(_URL . '/oauth.php') . '&scope=' . _OAUTH_SCOPE . '&code_challenge=' . $this->oAuthChallenge . '&code_challenge_method=' . $this->oAuthChallengeMethod;
             header('Location: ' . $oAuthURL);
             exit;
         }
