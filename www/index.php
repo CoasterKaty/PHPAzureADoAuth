@@ -1,7 +1,7 @@
 <?php
 /* index.php Sample homepage for oAuth Demo project
  *
- * Katy Nicholson, last updated 08/08/2021
+ * Katy Nicholson, last updated 01/09/2021
  *
  * https://github.com/CoasterKaty
  * https://katytech.blog/
@@ -13,12 +13,21 @@
 // Load the auth module, this will redirect us to login if we aren't already logged in.
 include '../inc/auth.php';
 $Auth = new modAuth();
-
+include '../inc/graph.php';
+$Graph = new modGraph();
 //Display the username, logout link and a list of attributes returned by Azure AD.
-echo '<h1>Hello there, ' . $Auth->userName . '</h1>';
+$photo = $Graph->getPhoto();
+$profile = $Graph->getProfile();
+
+echo '<h1>Hello there, ' . $profile->displayName . ' (' . $Auth->userName . ')</h1>';
 echo '<h2><a href="/?action=logout">Log out</a></h2>';
-echo '<pre>';
+echo $photo;
+echo '<br><br>';
+echo 'Profile Graph API output:<pre>';
+print_r($profile);
+echo '</pre><br>Data returned in JWT token:<pre>';
 print_r($Auth->userData);
 echo '</pre>';
 ?>
+
 
