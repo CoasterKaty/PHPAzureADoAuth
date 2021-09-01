@@ -37,7 +37,7 @@ if ($sessionData) {
     }
     $jwt = explode('.', $reply->access_token);
     $info = json_decode(base64_decode($jwt[1]), true);
-    $modDB->Update('tblAuthSessions', array('txtRefreshToken' => $reply->refresh_token, 'txtJWT' => base64_decode($jwt[1]), 'txtRedir' => '', 'dtExpires' => date('Y-m-d H:i:s', strtotime('+' . $reply->expires_in . ' seconds'))), array('intAuthID' => $sessionData['intAuthID']));
+    $modDB->Update('tblAuthSessions', array('txtToken' => $reply->access_token, 'txtRefreshToken' => $reply->refresh_token, 'txtJWT' => base64_decode($jwt[1]), 'txtRedir' => '', 'dtExpires' => date('Y-m-d H:i:s', strtotime('+' . $reply->expires_in . ' seconds'))), array('intAuthID' => $sessionData['intAuthID']));
     // Redirect user back to where they came from.
     header('Location: ' . $sessionData['txtRedir']);
 } else {
