@@ -29,6 +29,9 @@ if ($sessionData) {
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
     $response = curl_exec($ch);
+    if ($cError = curl_error($ch)) {
+        die($cError);
+    }
     curl_close($ch);
     // Decode response from Azure AD. Extract JWT data from supplied access_token and update database.
     $reply = json_decode($response);
