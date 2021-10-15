@@ -1,7 +1,7 @@
 <?php
 /* auth.php Azure AD oAuth Class
  *
- * Katy Nicholson, last updated 01/09/2021
+ * Katy Nicholson, last updated 15/10/2021
  *
  * https://github.com/CoasterKaty
  * https://katytech.blog/
@@ -59,13 +59,14 @@ class modAuth {
                     curl_close($ch);
                     $reply = json_decode($response);
                     if ($reply->error) {
-                        if(substr($reply->error_description, 0, 9) == 'MSIS9615:') {
-                            //refresh token expired, this is probably an ADFS error code rather than Azure AD.
-                            $this->modDB->Update('tblAuthSessions', array('txtRedir' => $url, 'txtRefreshToken' => ''),  array('intAuthID' => $res['intAuthID']));
-                            $oAuthURL = _OAUTH_SERVER . 'authorize?response_type=code&client_id=' . _OAUTH_CLIENTID . '&redirect_uri=' . urlencode(_URL . '/oauth.php') . '&scope=' . _OAUTH_SCOPE;
+                        if(substr($reply->error_description, 0, 12) == 'AADSTS70008:') {
+                            //refresh token expired
+                            $this->modDB->Update('tblAuthSessions', array('txtRedir' => $url, 'txtRefreshToken' => '', 'dtExpires' => date('Y-m-d H:i:s', strtotime('+5 minutes'))),  array('intAuthID' => $res['intAuthID']));
+                            $oAuthURL = _OAUTH_SERVER . 'authorize?response_type=code&client_id=' . _OAUTH_CLIENTID . '&redirect_uri=' . urlencode(_URL . '/oauth.php') . '&scope=' . _OAUTH_SCOPE . '&code_challenge=' . $this->oAuthChallenge . '&code_challenge_method=' . $this->oAuthChallengeMethod;
                             header('Location: ' . $oAuthURL);
                             exit;
                         }
+
                     die($reply->error_description);
                     }
                     $jwt = explode('.', $reply->access_token);
