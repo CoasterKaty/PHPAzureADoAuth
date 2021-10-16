@@ -1,7 +1,7 @@
 <?php
 /* index.php Sample homepage for oAuth Demo project
  *
- * Katy Nicholson, last updated 01/09/2021
+ * Katy Nicholson, last updated 16/10/2021
  *
  * https://github.com/CoasterKaty
  * https://katytech.blog/
@@ -21,6 +21,11 @@ $profile = $Graph->getProfile();
 
 echo '<h1>Hello there, ' . $profile->displayName . ' (' . $Auth->userName . ')</h1>';
 echo '<h2><a href="/?action=logout">Log out</a></h2>';
+echo 'Your roles in this app are:<ul>';
+foreach ($role in $Auth->userRoles) {
+    echo '<li>' . $role . '</li>';
+}
+echo '</ul>';
 echo $photo;
 echo '<br><br>';
 echo 'Profile Graph API output:<pre>';
