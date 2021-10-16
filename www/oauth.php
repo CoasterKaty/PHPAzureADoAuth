@@ -1,7 +1,7 @@
 <?php
 /* oauth.php Azure AD oAuth web callback script
  *
- * Katy Nicholson, last updated 01/09/2021
+ * Katy Nicholson, last updated 16/10/2021
  *
  * https://github.com/CoasterKaty
  * https://katytech.blog/
@@ -33,14 +33,15 @@ if ($sessionData) {
         die($cError);
     }
     curl_close($ch);
-    // Decode response from Azure AD. Extract JWT data from supplied access_token and update database.
+    // Decode response from Azure AD. Extract JWT data from supplied access_token and id_token and update database.
     $reply = json_decode($response);
     if ($reply->error) {
         die($reply->error_description);
     }
-    $jwt = explode('.', $reply->access_token);
-    $info = json_decode(base64_decode($jwt[1]), true);
-    $modDB->Update('tblAuthSessions', array('txtToken' => $reply->access_token, 'txtRefreshToken' => $reply->refresh_token, 'txtJWT' => base64_decode($jwt[1]), 'txtRedir' => '', 'dtExpires' => date('Y-m-d H:i:s', strtotime('+' . $reply->expires_in . ' seconds'))), array('intAuthID' => $sessionData['intAuthID']));
+
+    $accessToken = base64_decode(explode('.', $reply->access_token)[1]);
+    $idToken = base64_decode(explode('.', $reply->id_token)[1]);
+    $modDB->Update('tblAuthSessions', array('txtToken' => $reply->access_token, 'txtRefreshToken' => $reply->refresh_token, 'txtJWT' => $accessToken, 'txtIDToken' => $idToken, 'txtRedir' => '', 'dtExpires' => date('Y-m-d H:i:s', strtotime('+' . $reply->expires_in . ' seconds'))), array('intAuthID' => $sessionData['intAuthID']));
     // Redirect user back to where they came from.
     header('Location: ' . $sessionData['txtRedir']);
 } else {
