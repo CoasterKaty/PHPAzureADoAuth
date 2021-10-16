@@ -1,7 +1,7 @@
 <?php
 /* auth.php Azure AD oAuth Class
  *
- * Katy Nicholson, last updated 15/10/2021
+ * Katy Nicholson, last updated 16/10/2021
  *
  * https://github.com/CoasterKaty
  * https://katytech.blog/
@@ -19,6 +19,7 @@ class modAuth {
     var $oAuthVerifier;
     var $oAuthChallenge;
     var $oAuthChallengeMethod;
+    var $userRoles;
 
     function __construct() {
         $this->modDB = new modDB();
@@ -78,6 +79,10 @@ class modAuth {
             $this->Token = $res['txtToken'];
             $this->userData = json_decode($res['txtJWT']);
             $this->userName = $this->userData->unique_name;
+            if ($res['txtIDToken']) {
+                $idToken = json_decode($res['txtIDToken']);
+                $this->userRoles = $idToken->roles;
+            }
         } else {
             // Generate the code verifier and challenge
             $this->oAuthChallenge();
@@ -93,6 +98,16 @@ class modAuth {
         //Clean up old entries
         $this->modDB->Query('DELETE FROM tblAuthSessions WHERE dtExpires < NOW()');
     }
+    
+    
+    function checkUserRole($role) {
+        // Check that the requested role has been assigned to the user
+        if (in_array($role, $this->userRoles)) {
+            return 1;
+        }
+        return;
+    }
+
 
     function uuid() {
         //uuid function is not my code, but unsure who the original author is. KN
