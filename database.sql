@@ -7,5 +7,6 @@ CREATE TABLE `tblAuthSessions` (
   `txtRefreshToken` text DEFAULT NULL,
   `txtCodeVerifier` varchar(255) DEFAULT NULL,
   `txtToken` text DEFAULT NULL,
+  `txtIDToken` text DEFAULT NULL,
   PRIMARY KEY (`intAuthID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=73 DEFAULT CHARSET=utf8mb4;
