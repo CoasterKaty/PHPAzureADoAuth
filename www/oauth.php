@@ -39,9 +39,8 @@ if ($sessionData) {
         die($reply->error_description);
     }
 
-    $accessToken = base64_decode(explode('.', $reply->access_token)[1]);
     $idToken = base64_decode(explode('.', $reply->id_token)[1]);
-    $modDB->Update('tblAuthSessions', array('txtToken' => $reply->access_token, 'txtRefreshToken' => $reply->refresh_token, 'txtJWT' => $accessToken, 'txtIDToken' => $idToken, 'txtRedir' => '', 'dtExpires' => date('Y-m-d H:i:s', strtotime('+' . $reply->expires_in . ' seconds'))), array('intAuthID' => $sessionData['intAuthID']));
+    $modDB->Update('tblAuthSessions', array('txtToken' => $reply->access_token, 'txtRefreshToken' => $reply->refresh_token, 'txtIDToken' => $idToken, 'txtRedir' => '', 'dtExpires' => date('Y-m-d H:i:s', strtotime('+' . $reply->expires_in . ' seconds'))), array('intAuthID' => $sessionData['intAuthID']));
     // Redirect user back to where they came from.
     header('Location: ' . $sessionData['txtRedir']);
 } else {
