@@ -82,6 +82,10 @@ class modAuth {
                 $idToken = json_decode($res['txtIDToken']);
                 $this->userRoles = $idToken->roles;
                 $this->userName = $idToken->preferred_username;
+                if (!$idToken->roles) {
+                        $this->userRoles = array('Default Access');
+                }
+
             }
         } else {
             // Generate the code verifier and challenge
