@@ -1,7 +1,7 @@
 <?php
 /* index.php Sample homepage for oAuth Demo project
  *
- * Katy Nicholson, last updated 16/10/2021
+ * Katy Nicholson, last updated 17/10/2021
  *
  * https://github.com/CoasterKaty
  * https://katytech.blog/
@@ -30,8 +30,6 @@ echo $photo;
 echo '<br><br>';
 echo 'Profile Graph API output:<pre>';
 print_r($profile);
-echo '</pre><br>Data returned in JWT token:<pre>';
-print_r($Auth->userData);
 echo '</pre>';
 ?>
 
