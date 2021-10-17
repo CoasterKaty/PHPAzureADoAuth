@@ -1,7 +1,7 @@
 <?php
 /* oauth.php Azure AD oAuth web callback script
  *
- * Katy Nicholson, last updated 16/10/2021
+ * Katy Nicholson, last updated 17/10/2021
  *
  * https://github.com/CoasterKaty
  * https://katytech.blog/
