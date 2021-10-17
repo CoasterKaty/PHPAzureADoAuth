@@ -1,7 +1,7 @@
 <?php
 /* auth.php Azure AD oAuth Class
  *
- * Katy Nicholson, last updated 16/10/2021
+ * Katy Nicholson, last updated 17/10/2021
  *
  * https://github.com/CoasterKaty
  * https://katytech.blog/
@@ -33,8 +33,8 @@ class modAuth {
             $res = $this->modDB->QuerySingle('SELECT * FROM tblAuthSessions WHERE txtSessionKey = \'' . $this->modDB->Escape($_SESSION['sessionkey']) . '\' AND dtExpires > NOW()');
             $this->oAuthVerifier = $res['txtCodeVerifier'];
             $this->oAuthChallenge();
-            if (!$res || !$res['txtJWT']) {
-                //not in DB or empty JWT field
+            if (!$res || !$res['txtIDToken']) {
+                //not in DB or empty ID token field
                 unset($_SESSION['sessionkey']);
                 session_destroy();
                 header('Location: ' . $_SERVER['REQUEST_URI']);
@@ -77,11 +77,11 @@ class modAuth {
             }
             //Populate userData and userName from the JWT stored in the database.
             $this->Token = $res['txtToken'];
-            $this->userData = json_decode($res['txtJWT']);
-            $this->userName = $this->userData->unique_name;
+
             if ($res['txtIDToken']) {
                 $idToken = json_decode($res['txtIDToken']);
                 $this->userRoles = $idToken->roles;
+                $this->userName = $idToken->preferred_username;
             }
         } else {
             // Generate the code verifier and challenge
