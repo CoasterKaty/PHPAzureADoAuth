@@ -1,7 +1,7 @@
 <?php
 /* auth.php Azure AD oAuth Class
  *
- * Katy Nicholson, last updated 17/10/2021
+ * Katy Nicholson, last updated 15/11/2021
  *
  * https://github.com/CoasterKaty
  * https://katytech.blog/
@@ -10,6 +10,8 @@
  */
 
 require_once dirname(__FILE__) . '/mysql.php';
+
+class authException extends Exception { }
 
 class modAuth {
     var $modDB;
@@ -20,21 +22,22 @@ class modAuth {
     var $oAuthChallenge;
     var $oAuthChallengeMethod;
     var $userRoles;
+    var $isLoggedIn;
 
-    function __construct() {
+    function __construct($allowAnonymous = '0') {
         $this->modDB = new modDB();
 
         session_start();
         $url = _URL . $_SERVER['REQUEST_URI'];
-        
+
         // check session key against database. If it's expired or doesnt exist then forward to Azure AD
         if (isset($_SESSION['sessionkey'])) {
-            // see if it's still valid
-            $res = $this->modDB->QuerySingle('SELECT * FROM tblAuthSessions WHERE txtSessionKey = \'' . $this->modDB->Escape($_SESSION['sessionkey']) . '\' AND dtExpires > NOW()');
+            // see if it's still valid. Expiry date doesn't mean that we can't just use the refresh token, so don't test this here
+            $res = $this->modDB->QuerySingle('SELECT * FROM tblAuthSessions WHERE txtSessionKey = \'' . $this->modDB->Escape($_SESSION['sessionkey']) . '\'');
             $this->oAuthVerifier = $res['txtCodeVerifier'];
             $this->oAuthChallenge();
             if (!$res || !$res['txtIDToken']) {
-                //not in DB or empty ID token field
+                //not in DB or empty id token field
                 unset($_SESSION['sessionkey']);
                 session_destroy();
                 header('Location: ' . $_SERVER['REQUEST_URI']);
@@ -67,8 +70,7 @@ class modAuth {
                             header('Location: ' . $oAuthURL);
                             exit;
                         }
-
-                    die($reply->error_description);
+                    	throw new authException($reply->error_description);
                     }
                     $jwt = explode('.', $reply->access_token);
                     $info = json_decode(base64_decode($jwt[1]), true);
@@ -77,41 +79,42 @@ class modAuth {
             }
             //Populate userData and userName from the JWT stored in the database.
             $this->Token = $res['txtToken'];
-
-            if ($res['txtIDToken']) {
-                $idToken = json_decode($res['txtIDToken']);
-                $this->userRoles = $idToken->roles;
-                $this->userName = $idToken->preferred_username;
-                if (!$idToken->roles) {
-                        $this->userRoles = array('Default Access');
-                }
-
-            }
+	    if ($res['txtIDToken']) {
+		$idToken = json_decode($res['txtIDToken']);
+		$this->userName = $idToken->preferred_username;
+		$this->userRoles = $idToken->roles;
+		if (!$idToken->roles) {
+			$this->userRoles = array('Default Access');
+		}
+	    }
+	    $this->isLoggedIn = 1;
         } else {
-            // Generate the code verifier and challenge
-            $this->oAuthChallenge();
-            // Generate a session key and store in cookie, then populate database
-            $sessionKey = $this->uuid();
-            $_SESSION['sessionkey'] = $sessionKey;
-            $this->modDB->Insert('tblAuthSessions', array('txtSessionKey' => $sessionKey, 'txtRedir' => $url, 'txtCodeVerifier' => $this->oAuthVerifier, 'dtExpires' => date('Y-m-d H:i:s', strtotime('+5 minutes'))));
-            // Redirect to Azure AD login page
-            $oAuthURL = _OAUTH_SERVER . 'authorize?response_type=code&client_id=' . _OAUTH_CLIENTID . '&redirect_uri=' . urlencode(_URL . '/oauth.php') . '&scope=' . _OAUTH_SCOPE . '&code_challenge=' . $this->oAuthChallenge . '&code_challenge_method=' . $this->oAuthChallengeMethod;
-            header('Location: ' . $oAuthURL);
-            exit;
+	    if (!$allowAnonymous || $_GET['login'] == '1') {
+                // Generate the code verifier and challenge
+                $this->oAuthChallenge();
+                // Generate a session key and store in cookie, then populate database
+                $sessionKey = $this->uuid();
+                $_SESSION['sessionkey'] = $sessionKey;
+                $this->modDB->Insert('tblAuthSessions', array('txtSessionKey' => $sessionKey, 'txtRedir' => $url, 'txtCodeVerifier' => $this->oAuthVerifier, 'dtExpires' => date('Y-m-d H:i:s', strtotime('+5 minutes'))));
+                // Redirect to Azure AD login page
+                $oAuthURL = _OAUTH_SERVER . 'authorize?response_type=code&client_id=' . _OAUTH_CLIENTID . '&redirect_uri=' . urlencode(_URL . '/oauth.php') . '&scope=' . _OAUTH_SCOPE . '&code_challenge=' . $this->oAuthChallenge . '&code_challenge_method=' . $this->oAuthChallengeMethod;
+                header('Location: ' . $oAuthURL);
+                exit;
+	    }
         }
         //Clean up old entries
-        $this->modDB->Query('DELETE FROM tblAuthSessions WHERE dtExpires < NOW()');
-    }
-    
-    
-    function checkUserRole($role) {
-        // Check that the requested role has been assigned to the user
-        if (in_array($role, $this->userRoles)) {
-            return 1;
-        }
-        return;
+	// The refresh token is valid for 72 hours by default, but there doesn't seem to be a way to see when the specific one issued expires. So assume anything 72 hours past the expiry of the access token is gone and delete.
+	$maxRefresh = strtotime('-72 hour');
+        $this->modDB->Query('DELETE FROM tblAuthSessions WHERE dtExpires < \'' . date('Y-m-d H:i:s', $maxRefresh) . '\'');
     }
 
+    function checkUserRole($role) {
+	// Check that the requested role has been assigned to the user
+	if (in_array($role, $this->userRoles)) {
+	    return 1;
+	}
+	return;
+    }
 
     function uuid() {
         //uuid function is not my code, but unsure who the original author is. KN

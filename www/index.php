@@ -1,7 +1,7 @@
 <?php
 /* index.php Sample homepage for oAuth Demo project
  *
- * Katy Nicholson, last updated 17/10/2021
+ * Katy Nicholson, last updated 15/11/2021
  *
  * https://github.com/CoasterKaty
  * https://katytech.blog/
@@ -12,7 +12,13 @@
 
 // Load the auth module, this will redirect us to login if we aren't already logged in.
 include '../inc/auth.php';
-$Auth = new modAuth();
+try {
+	$Auth = new modAuth();
+} catch (authException $e) {
+	echo '<h1>Error Ocurred</h1>';
+	echo $e->getMessage();
+	exit;
+}
 include '../inc/graph.php';
 $Graph = new modGraph();
 //Display the username, logout link and a list of attributes returned by Azure AD.
