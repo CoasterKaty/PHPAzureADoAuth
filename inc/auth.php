@@ -72,9 +72,9 @@ class modAuth {
                         }
                     	throw new authException($reply->error_description);
                     }
-                    $jwt = explode('.', $reply->access_token);
-                    $info = json_decode(base64_decode($jwt[1]), true);
-                    $this->modDB->Update('tblAuthSessions', array('txtToken' => $reply->access_token, 'txtRefreshToken' => $reply->refresh_token, 'txtJWT' => base64_decode($jwt[1]), 'txtRedir' => '', 'dtExpires' => date('Y-m-d H:i:s', strtotime('+' . $reply->expires_in . ' seconds'))), array('intAuthID' => $res['intAuthID']));
+		    $idToken = base64_decode(explode('.', $reply->id_token)[1]);
+		    $this->modDB->Update('tblAuthSessions', array('txtToken' => $reply->access_token, 'txtRefreshToken' => $reply->refresh_token, 'txtIDToken' => $idToken, 'txtRedir' => '', 'dtExpires' => date('Y-m-d H:i:s', strtotime('+' . $reply->expires_in . ' seconds'))), array('intAuthID' => $res['intAuthID']));
+    		    $res['txtToken'] = $reply->access_token;
                 }
             }
             //Populate userData and userName from the JWT stored in the database.
