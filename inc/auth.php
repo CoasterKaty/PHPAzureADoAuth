@@ -1,7 +1,7 @@
 <?php
 /* auth.php Azure AD oAuth Class
  *
- * Katy Nicholson, last updated 15/11/2021
+ * Katy Nicholson, last updated 17/11/2021
  *
  * https://github.com/CoasterKaty
  * https://katytech.blog/
@@ -10,8 +10,7 @@
  */
 
 require_once dirname(__FILE__) . '/mysql.php';
-
-class authException extends Exception { }
+require_once dirname(__FILE__) . '/oauth.php';
 
 class modAuth {
     var $modDB;
@@ -23,10 +22,11 @@ class modAuth {
     var $oAuthChallengeMethod;
     var $userRoles;
     var $isLoggedIn;
+    var $oAuth;
 
     function __construct($allowAnonymous = '0') {
         $this->modDB = new modDB();
-
+	$this->oAuth = new modOAuth();
         session_start();
         $url = _URL . $_SERVER['REQUEST_URI'];
 
@@ -54,23 +54,19 @@ class modAuth {
             if (strtotime($res['dtExpires']) < strtotime('+10 minutes')) {
                 //attempt token refresh
                 if ($res['txtRefreshToken']) {
-                    $oauthRequest = 'grant_type=refresh_token&refresh_token=' . $res['txtRefreshToken'] . '&client_id=' . _OAUTH_CLIENTID . '&client_secret=' . urlencode(_OAUTH_SECRET) . '&scope=' . _OAUTH_SCOPE;
-                    $ch = curl_init(_OAUTH_SERVER . 'token');
-                    curl_setopt($ch, CURLOPT_POST, 1);
-                    curl_setopt($ch, CURLOPT_POSTFIELDS, $oauthRequest);
-                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                    $response = curl_exec($ch);
-                    curl_close($ch);
+    	            $oauthRequest = $this->oAuth->generateRequest('grant_type=refresh_token&refresh_token=' . $res['txtRefreshToken'] . '&client_id=' . _OAUTH_CLIENTID . '&scope=' . _OAUTH_SCOPE);
+	            $reponse = $this->oAuth->postRequest('token', $oauthRequest);
                     $reply = json_decode($response);
                     if ($reply->error) {
                         if(substr($reply->error_description, 0, 12) == 'AADSTS70008:') {
                             //refresh token expired
                             $this->modDB->Update('tblAuthSessions', array('txtRedir' => $url, 'txtRefreshToken' => '', 'dtExpires' => date('Y-m-d H:i:s', strtotime('+5 minutes'))),  array('intAuthID' => $res['intAuthID']));
-                            $oAuthURL = _OAUTH_SERVER . 'authorize?response_type=code&client_id=' . _OAUTH_CLIENTID . '&redirect_uri=' . urlencode(_URL . '/oauth.php') . '&scope=' . _OAUTH_SCOPE . '&code_challenge=' . $this->oAuthChallenge . '&code_challenge_method=' . $this->oAuthChallengeMethod;
+                            $oAuthURL = 'https://login.microsoftonline.com/' . _OAUTH_TENANTID . '/oauth2/v2.0/' . 'authorize?response_type=code&client_id=' . _OAUTH_CLIENTID . '&redirect_uri=' . urlencode(_URL . '/oauth.php') . '&scope=' . _OAUTH_SCOPE . '&code_challenge=' . $this->oAuthChallenge . '&code_challenge_method=' . $this->oAuthChallengeMethod;
                             header('Location: ' . $oAuthURL);
                             exit;
                         }
-                    	throw new authException($reply->error_description);
+			echo $this->oAuth->errorMessage($reply->error_description);
+			exit;
                     }
 		    $idToken = base64_decode(explode('.', $reply->id_token)[1]);
 		    $this->modDB->Update('tblAuthSessions', array('txtToken' => $reply->access_token, 'txtRefreshToken' => $reply->refresh_token, 'txtIDToken' => $idToken, 'txtRedir' => '', 'dtExpires' => date('Y-m-d H:i:s', strtotime('+' . $reply->expires_in . ' seconds'))), array('intAuthID' => $res['intAuthID']));
@@ -97,7 +93,7 @@ class modAuth {
                 $_SESSION['sessionkey'] = $sessionKey;
                 $this->modDB->Insert('tblAuthSessions', array('txtSessionKey' => $sessionKey, 'txtRedir' => $url, 'txtCodeVerifier' => $this->oAuthVerifier, 'dtExpires' => date('Y-m-d H:i:s', strtotime('+5 minutes'))));
                 // Redirect to Azure AD login page
-                $oAuthURL = _OAUTH_SERVER . 'authorize?response_type=code&client_id=' . _OAUTH_CLIENTID . '&redirect_uri=' . urlencode(_URL . '/oauth.php') . '&scope=' . _OAUTH_SCOPE . '&code_challenge=' . $this->oAuthChallenge . '&code_challenge_method=' . $this->oAuthChallengeMethod;
+                $oAuthURL = 'https://login.microsoftonline.com/' . _OAUTH_TENANTID . '/oauth2/v2.0/' . 'authorize?response_type=code&client_id=' . _OAUTH_CLIENTID . '&redirect_uri=' . urlencode(_URL . '/oauth.php') . '&scope=' . _OAUTH_SCOPE . '&code_challenge=' . $this->oAuthChallenge . '&code_challenge_method=' . $this->oAuthChallengeMethod;
                 header('Location: ' . $oAuthURL);
                 exit;
 	    }

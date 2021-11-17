@@ -12,13 +12,7 @@
 
 // Load the auth module, this will redirect us to login if we aren't already logged in.
 include '../inc/auth.php';
-try {
-	$Auth = new modAuth();
-} catch (authException $e) {
-	echo '<h1>Error Ocurred</h1>';
-	echo $e->getMessage();
-	exit;
-}
+$Auth = new modAuth();
 include '../inc/graph.php';
 $Graph = new modGraph();
 //Display the username, logout link and a list of attributes returned by Azure AD.

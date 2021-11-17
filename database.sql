@@ -8,4 +8,4 @@ CREATE TABLE `tblAuthSessions` (
   `txtToken` text DEFAULT NULL,
   `txtIDToken` text DEFAULT NULL,
   PRIMARY KEY (`intAuthID`)
-) ENGINE=InnoDB AUTO_INCREMENT=73 DEFAULT CHARSET=utf8mb4;
+);

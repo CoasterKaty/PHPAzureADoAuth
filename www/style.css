@@ -1,0 +1,39 @@
+html {
+	--FatalErrorBorder: #cc3300;
+        --FatalErrorBackground: #ffb399;
+}
+* {
+	font-family: "Segoe UI", Calibri, sans-serif;
+}
+
+
+
+div#fatalError {
+        display: block;
+        position: absolute;
+        width: 100vw;
+        height: 100vh;
+        z-index: 400;
+        background-color: var(--FadedBackground);
+}
+div#fatalErrorInner {
+        width: 500px;
+        min-height: 100px;
+        padding: 25px;
+        border: 1px solid var(--FatalErrorBorder);
+        background-color: var(--FatalErrorBackground);
+        text-align: center;
+        position: absolute;
+        z-index: 500;
+        left: calc(50% - 250px);
+        top: 25%;
+}
+div#fatalError span {
+        font-weight: bold;
+        font-size: 24px;
+        display: block;
+        padding-bottom: 20px;
+        padding-top: 5px;
+}
+
+
