@@ -148,7 +148,7 @@ class modAuth {
         // Pack (H) to convert 64 char hash into 32 byte hex
         // As there is no B64UrlEncode we use strtr to swap +/ for -_ and then strip off the =
         $this->oAuthChallenge = str_replace('=', '', strtr(base64_encode(pack('H*', hash('sha256', $verifier))), '+/', '-_'));
-        $this->oAuthChallengeMethod = 'S256'; //change to S256
+        $this->oAuthChallengeMethod = 'S256';
     }
 }
 ?>

@@ -40,11 +40,9 @@ define('_OAUTH_METHOD', 'certificate');
 define('_OAUTH_SECRET', 'CLIENT_SECRET');
 define('_OAUTH_AUTH_CERTFILE', '/path/to/certificate.crt');
 define('_OAUTH_AUTH_KEYFILE', '/path/to/privatekey.pem');
-<<<<<<< HEAD
-// on Windows, the certificate paths should be in the form c:/path/to/cert.crt
-=======
 
->>>>>>> 700b020dbacaa8f5c07aa4a36d105c8e99e50202
+// on Windows, the certificate paths should be in the form c:/path/to/cert.crt
+
 
 // URL to this website, no trailing slash.
 define('_URL', 'https://oauthdemo.domain');
