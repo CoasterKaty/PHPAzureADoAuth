@@ -9,7 +9,7 @@
  *
  */
 
-require_once dirname(__FILE__) . '/config.inc';
+require_once dirname(__FILE__) . '/_config.inc';
 
 class modDB {
 
