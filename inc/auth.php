@@ -55,7 +55,7 @@ class modAuth {
                 //attempt token refresh
                 if ($res['txtRefreshToken']) {
     	            $oauthRequest = $this->oAuth->generateRequest('grant_type=refresh_token&refresh_token=' . $res['txtRefreshToken'] . '&client_id=' . _OAUTH_CLIENTID . '&scope=' . _OAUTH_SCOPE);
-	            $reponse = $this->oAuth->postRequest('token', $oauthRequest);
+	            $response = $this->oAuth->postRequest('token', $oauthRequest);
                     $reply = json_decode($response);
                     if ($reply->error) {
                         if(substr($reply->error_description, 0, 12) == 'AADSTS70008:') {
@@ -152,4 +152,3 @@ class modAuth {
     }
 }
 ?>
-

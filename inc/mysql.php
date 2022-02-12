@@ -32,7 +32,8 @@ class modDB {
     }
 
     public function QuerySingle($strQuery) {
-        return mysqli_fetch_array($this->Query($strQuery), MYSQLI_ASSOC);
+	$query = $this->Query($strQuery);
+	if (!is_bool($query)) return mysqli_fetch_array($query, MYSQLI_ASSOC);
     }
 
     public function Fetch(&$mysqlQuery) {
