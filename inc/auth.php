@@ -27,7 +27,7 @@ class modAuth {
     function __construct($allowAnonymous = '0') {
         $this->modDB = new modDB();
 	$this->oAuth = new modOAuth();
-        session_start();
+	if (session_status() == PHP_SESSION_NONE) session_start();
         $url = _URL . $_SERVER['REQUEST_URI'];
 
         // check session key against database. If it's expired or doesnt exist then forward to Azure AD
@@ -78,8 +78,9 @@ class modAuth {
 	    if ($res['txtIDToken']) {
 		$idToken = json_decode($res['txtIDToken']);
 		$this->userName = $idToken->preferred_username;
-		$this->userRoles = $idToken->roles;
-		if (!$idToken->roles) {
+		if (isset($idToken->roles)) {
+			$this->userRoles = $idToken->roles;
+		} else {
 			$this->userRoles = array('Default Access');
 		}
 	    }
